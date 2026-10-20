@@ -1,0 +1,3 @@
+hello world, this is a test for modified huffman coding. 
+the quick brown fox jumps over the lazy dog. 
+aaaaabbbbbcccccdddddeeeee
