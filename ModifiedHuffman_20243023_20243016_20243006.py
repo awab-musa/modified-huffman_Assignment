@@ -1,6 +1,5 @@
 import os
 
-# All files are read from and written to the folder of this code
 FOLDER = os.path.dirname(os.path.abspath(__file__))
 
 
