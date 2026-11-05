@@ -1,5 +1,6 @@
 import os
 
+# All files are read from and written to the folder of this code
 FOLDER = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -41,10 +42,11 @@ def build_huffman_codes(probs):
     while len(groups) > 1:
         group1 = groups.pop(find_smallest(groups))
         group2 = groups.pop(find_smallest(groups))
+        # Like the lecture: the bigger group gets 0, the smaller gets 1
         for symbol in group1[1]:
-            codes[symbol] = "0" + codes[symbol]
-        for symbol in group2[1]:
             codes[symbol] = "1" + codes[symbol]
+        for symbol in group2[1]:
+            codes[symbol] = "0" + codes[symbol]
         groups.append([group1[0] + group2[0], group1[1] + group2[1]])
 
     return codes
@@ -52,6 +54,15 @@ def build_huffman_codes(probs):
 
 def to_8_bits(number):
     return format(number, "08b")
+
+
+def to_n_bits(number, width):
+    return format(number, "0" + str(width) + "b")
+
+
+# Original code (like the lecture): number the symbols in order, fixed width
+def code_width(symbols):
+    return max(1, (len(symbols) - 1).bit_length())
 
 
 # Compression: symbols with probability <= p_min are grouped into "Others"
@@ -78,12 +89,15 @@ def compress(in_path, out_path, p_min):
     if len(probs) > 0:
         codes = build_huffman_codes(probs)
 
+    symbols = sorted(counts)
+    width = code_width(symbols)
+
     bits = ""
     for byte in data:
         if byte in codes:
             bits = bits + codes[byte]
         else:
-            bits = bits + codes["Others"] + to_8_bits(byte)
+            bits = bits + codes["Others"] + to_n_bits(symbols.index(byte), width)
 
     pad = 0
     while len(bits) % 8 != 0:
@@ -100,6 +114,7 @@ def compress(in_path, out_path, p_min):
     file.write((str(len(codes)) + "\n").encode())
     for symbol in codes:
         file.write((str(symbol) + " " + codes[symbol] + "\n").encode())
+    file.write((" ".join(str(s) for s in symbols) + "\n").encode())
     file.write(packed)
     file.close()
 
@@ -120,6 +135,9 @@ def decompress(in_path, out_path):
         else:
             lookup[line[1]] = int(line[0])
 
+    symbols = [int(s) for s in file.readline().decode().split()]
+    width = code_width(symbols)
+
     packed = file.read()
     file.close()
 
@@ -139,8 +157,8 @@ def decompress(in_path, out_path):
             result.append(lookup[buffer])
             buffer = ""
         elif buffer == others_code:
-            result.append(int(bits[i:i + 8], 2))
-            i = i + 8
+            result.append(symbols[int(bits[i:i + width], 2)])
+            i = i + width
             buffer = ""
 
     file = open(out_path, "wb")
